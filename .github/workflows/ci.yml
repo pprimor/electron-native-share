@@ -9,8 +9,14 @@ on:
 
 jobs:
   test:
-    name: Test
-    runs-on: ubuntu-latest
+    name: Test (${{ matrix.os }})
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+          - os: macos-latest
+          - os: windows-latest
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
 
@@ -19,7 +25,7 @@ jobs:
           node-version: 20
           cache: npm
 
-      - run: npm ci --ignore-scripts
+      - run: npm ci
 
       - run: npm run build:ts
 
@@ -79,6 +85,16 @@ jobs:
           merge-multiple: true
 
       - run: npm run build:ts
+
+      - name: Verify package contents
+        shell: bash
+        run: |
+          PACK_OUTPUT=$(npm pack --dry-run 2>&1)
+          echo "$PACK_OUTPUT"
+          echo "$PACK_OUTPUT" | grep -q "lib/index.js" || { echo "::error::Missing lib/index.js"; exit 1; }
+          echo "$PACK_OUTPUT" | grep -q "lib/index.d.ts" || { echo "::error::Missing lib/index.d.ts"; exit 1; }
+          echo "$PACK_OUTPUT" | grep -q "binding.gyp" || { echo "::error::Missing binding.gyp"; exit 1; }
+          echo "$PACK_OUTPUT" | grep -q "prebuilds/" || { echo "::error::Missing prebuilds/"; exit 1; }
 
       - run: npm publish
         env:
