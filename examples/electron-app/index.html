@@ -120,6 +120,51 @@
     #result:not(:empty) {
       color: #666;
     }
+
+    .file-picker {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .file-picker button {
+      flex-shrink: 0;
+      padding: 8px 14px;
+      font-size: 12px;
+      background: #f0efed;
+      color: #2c2c2c;
+      border: 1.5px solid #ddd;
+    }
+
+    .file-picker button:hover { background: #e5e4e1; }
+    .file-picker button:active { background: #d8d7d4; }
+
+    .file-list {
+      font-size: 12px;
+      color: #888;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .file-entry {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .file-entry .remove {
+      padding: 0 4px;
+      background: none;
+      border: none;
+      color: #b74141;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      line-height: 1;
+    }
+
+    .file-entry .remove:hover { color: #8a2020; }
   </style>
 </head>
 <body>
@@ -143,6 +188,14 @@
       <label for="url">URL</label>
       <input type="url" id="url" placeholder="https://github.com/user/repo" />
     </div>
+
+    <div>
+      <label>Files</label>
+      <div class="file-picker">
+        <button type="button" id="pickFilesBtn">Choose files…</button>
+      </div>
+      <div id="fileList" class="file-list"></div>
+    </div>
   </div>
 
   <div class="actions">
@@ -153,10 +206,48 @@
   <script>
     const statusEl = document.getElementById('shareStatus');
     const resultEl = document.getElementById('result');
+    const fileListEl = document.getElementById('fileList');
+    let selectedFiles = [];
 
     window.nativeShare.canShare().then(supported => {
       statusEl.textContent = supported ? 'native' : 'clipboard fallback';
       statusEl.className = supported ? 'supported' : 'unsupported';
+    });
+
+    function renderFileList() {
+      fileListEl.innerHTML = '';
+      selectedFiles.forEach((filePath, index) => {
+        const entry = document.createElement('div');
+        entry.className = 'file-entry';
+
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'remove';
+        removeBtn.textContent = '×';
+        removeBtn.type = 'button';
+        removeBtn.addEventListener('click', () => {
+          selectedFiles.splice(index, 1);
+          renderFileList();
+        });
+
+        const name = document.createElement('span');
+        name.textContent = filePath.split(/[/\\]/).pop();
+        name.title = filePath;
+
+        entry.appendChild(removeBtn);
+        entry.appendChild(name);
+        fileListEl.appendChild(entry);
+      });
+    }
+
+    document.getElementById('pickFilesBtn').addEventListener('click', async () => {
+      const paths = await window.nativeShare.pickFiles();
+      if (paths.length) {
+        const existing = new Set(selectedFiles);
+        for (const p of paths) {
+          if (!existing.has(p)) selectedFiles.push(p);
+        }
+        renderFileList();
+      }
     });
 
     document.getElementById('shareBtn').addEventListener('click', async () => {
@@ -168,8 +259,9 @@
       if (title) options.title = title;
       if (text) options.text = text;
       if (url) options.url = url;
+      if (selectedFiles.length) options.files = selectedFiles;
 
-      if (!title && !text && !url) {
+      if (!title && !text && !url && !selectedFiles.length) {
         resultEl.textContent = 'Fill in at least one field';
         return;
       }

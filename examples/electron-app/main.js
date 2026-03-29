@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
 const { share, canShare, getNativeWindowHandle } = require('electron-native-share');
 
@@ -34,4 +34,11 @@ ipcMain.handle('can-share', () => {
 
 ipcMain.handle('share', async (_event, options) => {
   return share(options, mainWindow);
+});
+
+ipcMain.handle('pick-files', async () => {
+  const result = await dialog.showOpenDialog(mainWindow, {
+    properties: ['openFile', 'multiSelections'],
+  });
+  return result.canceled ? [] : result.filePaths;
 });
