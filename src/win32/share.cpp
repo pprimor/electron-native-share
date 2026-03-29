@@ -40,11 +40,8 @@ public:
             auto interop = winrt::get_activation_factory<DataTransferManager,
                 IDataTransferManagerInterop>();
 
-            winrt::com_ptr<IDataTransferManagerInterop> dtmInterop;
-            interop->as(dtmInterop);
-
             DataTransferManager dtm{nullptr};
-            dtmInterop->GetForWindow(
+            interop->GetForWindow(
                 hwnd_,
                 winrt::guid_of<DataTransferManager>(),
                 winrt::put_abi(dtm)
@@ -82,7 +79,7 @@ public:
                 }
             });
 
-            dtmInterop->ShowShareUIForWindow(hwnd_);
+            interop->ShowShareUIForWindow(hwnd_);
 
             dtm.DataRequested(token);
 
