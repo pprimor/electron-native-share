@@ -4,6 +4,12 @@
   "description": "Universal native Share API for Electron apps — macOS NSSharingService, Windows WinRT DataTransferManager, clipboard fallback",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "require": "./lib/index.js"
+    }
+  },
   "files": [
     "lib/",
     "src/darwin/",
