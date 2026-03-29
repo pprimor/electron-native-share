@@ -7,10 +7,7 @@ export interface ShareOptions {
 }
 
 export interface ShareResult {
-  /** Whether native sharing was used (false = fallback) */
-  native: boolean;
-  /** The method used: 'native' | 'clipboard' | 'none' */
-  method: 'native' | 'clipboard' | 'none';
+  method: 'native' | 'cancelled';
 }
 
 export interface NativeAddon {

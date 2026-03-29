@@ -87,31 +87,31 @@ describe('electron-native-share', () => {
       vi.resetModules();
     });
 
-    it('accepts http URLs', async () => {
+    it('throws when native addon is not available (http URL)', async () => {
       vi.doMock('../platform', () => ({
         loadNativeAddon: () => null,
         isNativeSupported: () => false,
         getNativeWindowHandle: () => undefined,
       }));
       const { share } = await import('../index');
-      const result = await share({ url: 'http://example.com' });
-      expect(result.native).toBe(false);
-      expect(['clipboard', 'none']).toContain(result.method);
+      await expect(share({ url: 'http://example.com' })).rejects.toThrow(
+        'Native sharing is not available on this platform',
+      );
     });
 
-    it('accepts https URLs', async () => {
+    it('throws when native addon is not available (https URL)', async () => {
       vi.doMock('../platform', () => ({
         loadNativeAddon: () => null,
         isNativeSupported: () => false,
         getNativeWindowHandle: () => undefined,
       }));
       const { share } = await import('../index');
-      const result = await share({ url: 'https://example.com/path?q=1' });
-      expect(result.native).toBe(false);
-      expect(['clipboard', 'none']).toContain(result.method);
+      await expect(share({ url: 'https://example.com/path?q=1' })).rejects.toThrow(
+        'Native sharing is not available on this platform',
+      );
     });
 
-    it('accepts absolute file paths', async () => {
+    it('throws when native addon is not available (files)', async () => {
       vi.doMock('../platform', () => ({
         loadNativeAddon: () => null,
         isNativeSupported: () => false,
@@ -119,33 +119,36 @@ describe('electron-native-share', () => {
       }));
       const { share } = await import('../index');
       const existingFile = path.resolve(process.cwd(), 'package.json');
-      const result = await share({ files: [existingFile] });
-      expect(result.native).toBe(false);
+      await expect(share({ files: [existingFile] })).rejects.toThrow(
+        'Native sharing is not available on this platform',
+      );
     });
 
-    it('accepts text content', async () => {
+    it('throws when native addon is not available (text)', async () => {
       vi.doMock('../platform', () => ({
         loadNativeAddon: () => null,
         isNativeSupported: () => false,
         getNativeWindowHandle: () => undefined,
       }));
       const { share } = await import('../index');
-      const result = await share({ text: 'hello world' });
-      expect(result.native).toBe(false);
+      await expect(share({ text: 'hello world' })).rejects.toThrow(
+        'Native sharing is not available on this platform',
+      );
     });
 
-    it('accepts title-only content', async () => {
+    it('throws when native addon is not available (title)', async () => {
       vi.doMock('../platform', () => ({
         loadNativeAddon: () => null,
         isNativeSupported: () => false,
         getNativeWindowHandle: () => undefined,
       }));
       const { share } = await import('../index');
-      const result = await share({ title: 'My Title' });
-      expect(result.native).toBe(false);
+      await expect(share({ title: 'My Title' })).rejects.toThrow(
+        'Native sharing is not available on this platform',
+      );
     });
 
-    it('falls back when native addon throws', async () => {
+    it('propagates native addon errors', async () => {
       vi.doMock('../platform', () => ({
         loadNativeAddon: () => ({
           canShare: () => true,
@@ -155,11 +158,10 @@ describe('electron-native-share', () => {
         getNativeWindowHandle: () => undefined,
       }));
       const { share } = await import('../index');
-      const result = await share({ text: 'hello' });
-      expect(result.native).toBe(false);
+      await expect(share({ text: 'hello' })).rejects.toThrow('native error');
     });
 
-    it('returns native:true method:none on user cancellation', async () => {
+    it('returns cancelled on user cancellation', async () => {
       vi.doMock('../platform', () => ({
         loadNativeAddon: () => ({
           canShare: () => true,
@@ -170,46 +172,7 @@ describe('electron-native-share', () => {
       }));
       const { share } = await import('../index');
       const result = await share({ text: 'hello' });
-      expect(result).toEqual({ native: true, method: 'none' });
-    });
-  });
-
-  describe('fallback', () => {
-    it('returns clipboard result when no native addon', async () => {
-      const { shareFallback } = await import('../fallback');
-      const result = await shareFallback({ text: 'hello' });
-      expect(result.native).toBe(false);
-      expect(['clipboard', 'none']).toContain(result.method);
-    });
-
-    it('returns none when nothing to share', async () => {
-      const { shareFallback } = await import('../fallback');
-      const result = await shareFallback({});
-      expect(result).toEqual({ native: false, method: 'none' });
-    });
-
-    it('handles title, text, and url together', async () => {
-      const { shareFallback } = await import('../fallback');
-      const result = await shareFallback({
-        title: 'Title',
-        text: 'Body text',
-        url: 'https://example.com',
-      });
-      expect(result.native).toBe(false);
-      expect(['clipboard', 'none']).toContain(result.method);
-    });
-
-    it('handles files-only content', async () => {
-      const { shareFallback } = await import('../fallback');
-      const result = await shareFallback({ files: ['/tmp/test.txt'] });
-      expect(result.native).toBe(false);
-      expect(['clipboard', 'none']).toContain(result.method);
-    });
-
-    it('returns none for empty files array with no text', async () => {
-      const { shareFallback } = await import('../fallback');
-      const result = await shareFallback({ files: [] });
-      expect(result).toEqual({ native: false, method: 'none' });
+      expect(result).toEqual({ method: 'cancelled' });
     });
   });
 

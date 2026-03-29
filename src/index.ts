@@ -2,7 +2,6 @@ import * as fs from 'fs';
 import * as path from 'path';
 import type { ShareOptions, ShareResult, NativeShareInput } from './types';
 import { loadNativeAddon, isNativeSupported, getNativeWindowHandle } from './platform';
-import { shareFallback } from './fallback';
 
 export type { ShareOptions, ShareResult } from './types';
 
@@ -51,7 +50,7 @@ export async function share(
 
   const addon = loadNativeAddon();
   if (!addon || !addon.canShare()) {
-    return shareFallback(options);
+    throw new Error('Native sharing is not available on this platform');
   }
 
   const input: NativeShareInput = {
@@ -67,13 +66,13 @@ export async function share(
 
   try {
     await addon.share(input);
-    return { native: true, method: 'native' };
+    return { method: 'native' };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     if (message === 'Share cancelled by user') {
-      return { native: true, method: 'none' };
+      return { method: 'cancelled' };
     }
-    return shareFallback(options);
+    throw error;
   }
 }
 

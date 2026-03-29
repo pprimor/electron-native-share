@@ -1,6 +1,9 @@
 # electron-native-share
 
-Universal native Share API for Electron apps. Brings the OS share sheet to your desktop app — macOS `NSSharingServicePicker`, Windows `DataTransferManager`, with a clipboard fallback for Linux.
+[![CI](https://github.com/pprimor/electron-native-share/actions/workflows/ci.yml/badge.svg)](https://github.com/pprimor/electron-native-share/actions/workflows/ci.yml)
+[![npm](https://img.shields.io/npm/v/electron-native-share)](https://www.npmjs.com/package/electron-native-share)
+
+Universal native Share API for Electron apps. Brings the OS share sheet to your desktop app — macOS `NSSharingServicePicker`, Windows `DataTransferManager`.
 
 ## Install
 
@@ -28,7 +31,7 @@ const result = await share({
 });
 
 console.log(result);
-// { native: true, method: 'native' }
+// { method: 'native' }
 ```
 
 ### Sharing files
@@ -78,10 +81,11 @@ At least one of `title`, `text`, `url`, or `files` must be provided.
 
 ```typescript
 interface ShareResult {
-  native: boolean;            // true if native share sheet was used
-  method: 'native' | 'clipboard' | 'none';
+  method: 'native' | 'cancelled';
 }
 ```
+
+Throws an `Error` if native sharing is not available on the current platform. Use `canShare()` to check before calling.
 
 ### `getNativeWindowHandle(browserWindow): Buffer | undefined`
 
@@ -93,7 +97,24 @@ Utility to extract the native window handle from an Electron `BrowserWindow`.
 | -------- | --------------------------------- | ------ |
 | macOS    | `NSSharingServicePicker`          | ✅      |
 | Windows  | WinRT `DataTransferManager`       | ✅      |
-| Linux    | Clipboard fallback                | ✅      |
+| Linux    | Not supported                     | —      |
+
+## How it works
+
+This library provides direct access to native OS share sheets. There are no silent fallbacks — if native sharing isn't available, `share()` throws so your app can decide how to handle it (show a message, copy to clipboard, etc.).
+
+```typescript
+if (canShare()) {
+  const result = await share({ text: 'Hello!' });
+  // result.method is 'native' or 'cancelled'
+} else {
+  // Handle unsupported platform your way
+  clipboard.writeText('Hello!');
+  showToast('Copied to clipboard');
+}
+```
+
+The `install` script uses `node-gyp-build || exit 0`, so native addon build failures are silently ignored. On unsupported platforms the addon simply won't load, and `canShare()` will return `false`.
 
 ## Building from source
 

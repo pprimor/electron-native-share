@@ -210,7 +210,7 @@
     let selectedFiles = [];
 
     window.nativeShare.canShare().then(supported => {
-      statusEl.textContent = supported ? 'native' : 'clipboard fallback';
+      statusEl.textContent = supported ? 'native' : 'unsupported platform';
       statusEl.className = supported ? 'supported' : 'unsupported';
     });
 
@@ -268,7 +268,7 @@
 
       try {
         const result = await window.nativeShare.share(options);
-        resultEl.textContent = `${result.method}${result.native ? '' : ' (non-native)'}`;
+        resultEl.textContent = result.method;
       } catch (err) {
         resultEl.textContent = err.message;
       }

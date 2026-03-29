@@ -1,7 +1,7 @@
 {
   "name": "electron-native-share",
   "version": "0.1.0",
-  "description": "Universal native Share API for Electron apps — macOS NSSharingService, Windows WinRT DataTransferManager, clipboard fallback",
+  "description": "Universal native Share API for Electron apps — macOS NSSharingService, Windows WinRT DataTransferManager",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "exports": {
@@ -39,8 +39,7 @@
     "windows",
     "share-sheet",
     "NSSharingService",
-    "WinRT",
-    "clipboard"
+    "WinRT"
   ],
   "author": "Pedro Primor <pedro.primor@pm.me> (https://github.com/pprimor)",
   "license": "MIT",
