@@ -1,3 +1,4 @@
+import * as fs from 'fs';
 import * as path from 'path';
 import type { ShareOptions, ShareResult, NativeShareInput } from './types';
 import { loadNativeAddon, isNativeSupported, getNativeWindowHandle } from './platform';
@@ -34,6 +35,9 @@ function validateOptions(options: ShareOptions): void {
     for (const filePath of options.files) {
       if (!path.isAbsolute(filePath)) {
         throw new Error(`File paths must be absolute: ${filePath}`);
+      }
+      if (!fs.existsSync(filePath)) {
+        throw new Error(`File not found: ${filePath}`);
       }
     }
   }

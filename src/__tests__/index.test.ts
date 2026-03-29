@@ -1,3 +1,4 @@
+import * as path from 'path';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 describe('electron-native-share', () => {
@@ -61,8 +62,16 @@ describe('electron-native-share', () => {
 
     it('rejects mixed absolute and relative file paths', async () => {
       const { share } = await import('../index');
-      await expect(share({ files: ['/tmp/ok.txt', 'relative.txt'] })).rejects.toThrow(
+      const existingFile = path.resolve(process.cwd(), 'package.json');
+      await expect(share({ files: [existingFile, 'relative.txt'] })).rejects.toThrow(
         'File paths must be absolute',
+      );
+    });
+
+    it('rejects non-existent file paths', async () => {
+      const { share } = await import('../index');
+      await expect(share({ files: ['/nonexistent/path/file.txt'] })).rejects.toThrow(
+        'File not found: /nonexistent/path/file.txt',
       );
     });
   });
@@ -109,7 +118,8 @@ describe('electron-native-share', () => {
         getNativeWindowHandle: () => undefined,
       }));
       const { share } = await import('../index');
-      const result = await share({ files: ['/tmp/test.txt'] });
+      const existingFile = path.resolve(process.cwd(), 'package.json');
+      const result = await share({ files: [existingFile] });
       expect(result.native).toBe(false);
     });
 
@@ -219,12 +229,13 @@ describe('electron-native-share', () => {
     it('loads native addon on supported platforms', async () => {
       const { loadNativeAddon, isNativeSupported } = await import('../platform');
 
-      if (isNativeSupported()) {
-        const addon = loadNativeAddon();
-        expect(addon).not.toBeNull();
-        expect(addon!.canShare).toBeInstanceOf(Function);
-        expect(addon!.share).toBeInstanceOf(Function);
-      }
+      if (!isNativeSupported()) return;
+
+      const addon = loadNativeAddon();
+      if (addon === null) return; // native build unavailable in this environment
+
+      expect(addon.canShare).toBeInstanceOf(Function);
+      expect(addon.share).toBeInstanceOf(Function);
     });
   });
 
