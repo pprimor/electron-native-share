@@ -1,0 +1,15 @@
+{
+  "name": "electron-native-share-example",
+  "version": "1.0.0",
+  "private": true,
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "devDependencies": {
+    "electron": "^34.0.0"
+  },
+  "dependencies": {
+    "electron-native-share": "file:../../"
+  }
+}
