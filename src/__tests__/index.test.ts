@@ -268,4 +268,17 @@ describe('electron-native-share', () => {
       expect(getNativeWindowHandle(mockWindow)).toBe(mockHandle);
     });
   });
+
+  describe('native addon smoke tests', () => {
+    it('canShare returns a boolean value on supported platforms', async () => {
+      const { loadNativeAddon, isNativeSupported } = await import('../platform');
+      if (!isNativeSupported()) return;
+
+      const addon = loadNativeAddon();
+      if (addon === null) return;
+
+      const result = addon.canShare();
+      expect(typeof result).toBe('boolean');
+    });
+  });
 });

@@ -1,4 +1,7 @@
 import type { ShareOptions, ShareResult } from './types';
+import type { StdioOptions } from 'child_process';
+import { execSync } from 'child_process';
+import { getElectronClipboard } from './electron-clipboard';
 
 export async function shareFallback(options: ShareOptions): Promise<ShareResult> {
   const textParts: string[] = [];
@@ -13,16 +16,20 @@ export async function shareFallback(options: ShareOptions): Promise<ShareResult>
     return { native: false, method: 'none' };
   }
 
+  const clipText = content || options.files!.join('\n');
+
   try {
-    const { clipboard } = require('electron');
-    clipboard.writeText(content || options.files!.join('\n'));
-    return { native: false, method: 'clipboard' };
+    const clipboard = getElectronClipboard();
+    if (clipboard) {
+      clipboard.writeText(clipText);
+      return { native: false, method: 'clipboard' };
+    }
   } catch {
-    // electron not available — try Node.js clipboard fallback
+    // electron clipboard failed
   }
 
   try {
-    await copyToClipboardViaProcess(content || options.files!.join('\n'));
+    copyToClipboardViaProcess(clipText);
     return { native: false, method: 'clipboard' };
   } catch {
     // all clipboard methods failed
@@ -31,10 +38,9 @@ export async function shareFallback(options: ShareOptions): Promise<ShareResult>
   return { native: false, method: 'none' };
 }
 
-async function copyToClipboardViaProcess(text: string): Promise<void> {
-  const { execSync } = require('child_process');
+function copyToClipboardViaProcess(text: string): void {
   const platform = process.platform;
-  const pipeStdio: [string, string, string] = ['pipe', 'ignore', 'ignore'];
+  const pipeStdio: StdioOptions = ['pipe', 'ignore', 'ignore'];
 
   if (platform === 'linux') {
     try {
