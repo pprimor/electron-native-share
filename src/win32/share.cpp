@@ -2,17 +2,16 @@
 
 #ifdef _WIN32
 #include <windows.h>
+#include <shobjidl.h>
 #include <winrt/Windows.Foundation.h>
 #include <winrt/Windows.ApplicationModel.DataTransfer.h>
 #include <winrt/Windows.Storage.h>
 #include <winrt/Windows.Foundation.Collections.h>
-#include <shobjidl.h>
 
 #pragma comment(lib, "windowsapp")
 
 using namespace winrt;
 using namespace Windows::ApplicationModel::DataTransfer;
-using namespace Windows::Foundation;
 using namespace Windows::Storage;
 
 class ShareWorker : public Napi::AsyncWorker {
@@ -64,7 +63,7 @@ public:
                 }
 
                 if (!url_.empty()) {
-                    Uri uri(winrt::to_hstring(url_));
+                    Windows::Foundation::Uri uri(winrt::to_hstring(url_));
                     data.SetWebLink(uri);
                 }
 
