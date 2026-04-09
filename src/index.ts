@@ -7,6 +7,9 @@ export type { ShareOptions, ShareResult } from './types';
 
 const ALLOWED_URL_PROTOCOLS = new Set(['http:', 'https:']);
 
+// Must match the error message thrown by the native addons (share.mm / share.cpp)
+const NATIVE_CANCEL_MESSAGE = 'Share cancelled by user';
+
 export function canShare(): boolean {
   if (!isNativeSupported()) return false;
   const addon = loadNativeAddon();
@@ -69,7 +72,7 @@ export async function share(
     return { method: 'native' };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    if (message === 'Share cancelled by user') {
+    if (message === NATIVE_CANCEL_MESSAGE) {
       return { method: 'cancelled' };
     }
     throw error;

@@ -174,6 +174,60 @@ describe('electron-native-share', () => {
       const result = await share({ text: 'hello' });
       expect(result).toEqual({ method: 'cancelled' });
     });
+
+    it('returns native on successful share', async () => {
+      vi.doMock('../platform', () => ({
+        loadNativeAddon: () => ({
+          canShare: () => true,
+          share: () => Promise.resolve(),
+        }),
+        isNativeSupported: () => true,
+        getNativeWindowHandle: () => undefined,
+      }));
+      const { share } = await import('../index');
+      const result = await share({ text: 'hello' });
+      expect(result).toEqual({ method: 'native' });
+    });
+
+    it('passes window handle to native addon', async () => {
+      const mockHandle = Buffer.alloc(8);
+      let capturedInput: any;
+      vi.doMock('../platform', () => ({
+        loadNativeAddon: () => ({
+          canShare: () => true,
+          share: (input: any) => { capturedInput = input; return Promise.resolve(); },
+        }),
+        isNativeSupported: () => true,
+        getNativeWindowHandle: () => mockHandle,
+      }));
+      const { share } = await import('../index');
+      await share({ text: 'hello' }, { getNativeWindowHandle: () => mockHandle });
+      expect(capturedInput.windowHandle).toBe(mockHandle);
+    });
+
+    it('passes all options fields to native addon', async () => {
+      let capturedInput: any;
+      vi.doMock('../platform', () => ({
+        loadNativeAddon: () => ({
+          canShare: () => true,
+          share: (input: any) => { capturedInput = input; return Promise.resolve(); },
+        }),
+        isNativeSupported: () => true,
+        getNativeWindowHandle: () => undefined,
+      }));
+      const { share } = await import('../index');
+      const existingFile = path.resolve(process.cwd(), 'package.json');
+      await share({
+        title: 'Test Title',
+        text: 'Test text',
+        url: 'https://example.com',
+        files: [existingFile],
+      });
+      expect(capturedInput.title).toBe('Test Title');
+      expect(capturedInput.text).toBe('Test text');
+      expect(capturedInput.url).toBe('https://example.com');
+      expect(capturedInput.files).toEqual([existingFile]);
+    });
   });
 
   describe('platform', () => {

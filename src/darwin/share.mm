@@ -2,11 +2,20 @@
 #import <Cocoa/Cocoa.h>
 #import <objc/runtime.h>
 
-@interface ShareDelegate : NSObject <NSSharingServicePickerDelegate>
+@interface ShareDelegate : NSObject <NSSharingServicePickerDelegate, NSSharingServiceDelegate>
 @property (nonatomic, copy) void (^completionHandler)(BOOL success);
+@property (nonatomic, copy) NSString *shareTitle;
 @end
 
 @implementation ShareDelegate
+
+- (id<NSSharingServiceDelegate>)sharingServicePicker:(NSSharingServicePicker *)picker
+                       delegateForSharingService:(NSSharingService *)service {
+    if (self.shareTitle) {
+        service.subject = self.shareTitle;
+    }
+    return self;
+}
 
 - (void)sharingServicePicker:(NSSharingServicePicker *)sharingServicePicker
      didChooseSharingService:(NSSharingService *)service {
@@ -48,6 +57,12 @@ static Napi::Value Share(const Napi::CallbackInfo& info) {
 
     NSMutableArray *shareItems = [NSMutableArray array];
 
+    NSString *shareTitle = nil;
+    if (options.Has("title") && options.Get("title").IsString()) {
+        std::string title = options.Get("title").As<Napi::String>().Utf8Value();
+        shareTitle = [NSString stringWithUTF8String:title.c_str()];
+    }
+
     if (options.Has("text") && options.Get("text").IsString()) {
         std::string text = options.Get("text").As<Napi::String>().Utf8Value();
         NSString *nsText = [NSString stringWithUTF8String:text.c_str()];
@@ -77,12 +92,8 @@ static Napi::Value Share(const Napi::CallbackInfo& info) {
         }
     }
 
-    if ([shareItems count] == 0) {
-        if (options.Has("title") && options.Get("title").IsString()) {
-            std::string title = options.Get("title").As<Napi::String>().Utf8Value();
-            NSString *nsTitle = [NSString stringWithUTF8String:title.c_str()];
-            [shareItems addObject:nsTitle];
-        }
+    if ([shareItems count] == 0 && shareTitle) {
+        [shareItems addObject:shareTitle];
     }
 
     if ([shareItems count] == 0) {
@@ -95,7 +106,14 @@ static Napi::Value Share(const Napi::CallbackInfo& info) {
         auto handleBuf = options.Get("windowHandle").As<Napi::Buffer<uint8_t>>();
         if (handleBuf.Length() >= sizeof(void*)) {
             void *rawPtr = *reinterpret_cast<void**>(handleBuf.Data());
-            handleView = (__bridge NSView *)rawPtr;
+            @try {
+                NSView *candidate = (__bridge NSView *)rawPtr;
+                if ([candidate isKindOfClass:[NSView class]]) {
+                    handleView = candidate;
+                }
+            } @catch (NSException *) {
+                // Invalid pointer — fall through to window discovery
+            }
         }
     }
 
@@ -142,6 +160,7 @@ static Napi::Value Share(const Napi::CallbackInfo& info) {
             NSSharingServicePicker *picker = [[NSSharingServicePicker alloc] initWithItems:itemsCopy];
 
             ShareDelegate *delegate = [[ShareDelegate alloc] init];
+            delegate.shareTitle = shareTitle;
 
             auto captured = data;
 

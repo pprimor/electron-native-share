@@ -20,6 +20,6 @@ export interface NativeShareInput {
   text?: string;
   url?: string;
   files?: string[];
-  /** Native window handle (pointer as Buffer) for Windows */
+  /** Native window handle (pointer as Buffer) for macOS and Windows */
   windowHandle?: Buffer;
 }
